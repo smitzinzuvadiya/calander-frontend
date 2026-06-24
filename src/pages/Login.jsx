@@ -8,9 +8,11 @@ const Login = () => {
 
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
+    const [loading, setLoading] = useState(false);
 
     const handleLogin = async (e) => {
         e.preventDefault();
+        setLoading(true);
         try {
             const apiBaseUrl = import.meta.env.VITE_API_BASE_URL || 'http://localhost:5000/api';
             const response = await fetch(`${apiBaseUrl}/auth/login`, {
@@ -30,6 +32,8 @@ const Login = () => {
         } catch (error) {
             console.error('Login error:', error);
             toast.error('Login failed');
+        } finally {
+            setLoading(false);
         }
     }
 
@@ -68,9 +72,18 @@ const Login = () => {
                     </div>
                     <button
                         type='submit'
-                        className='w-full mt-2 py-3 bg-indigo-500 hover:bg-indigo-600 text-white font-bold text-base rounded-xl cursor-pointer active:scale-[0.98] transition-all duration-150 shadow-md shadow-indigo-100'
+                        disabled={loading}
+                        className={`w-full mt-2 py-3 bg-indigo-500 hover:bg-indigo-600 text-white font-bold text-base rounded-xl active:scale-[0.98] transition-all duration-150 shadow-md shadow-indigo-100 flex items-center justify-center gap-2 ${loading ? 'opacity-70 cursor-not-allowed' : 'cursor-pointer'}`}
                     >
-                        Sign In
+                        {loading ? (
+                            <>
+                                <svg className="animate-spin h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                                </svg>
+                                Signing In...
+                            </>
+                        ) : 'Sign In'}
                     </button>
                     <p className='text-center text-sm text-gray-400'>
                         Don't have an account?{' '}

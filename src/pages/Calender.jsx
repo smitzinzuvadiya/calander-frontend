@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react'
 import Header from '../components/Header'
 import { useNavigate } from 'react-router-dom'
+import { toast } from 'react-hot-toast'
 
 const Calender = () => {
     const navigate = useNavigate();
@@ -79,6 +80,7 @@ const Calender = () => {
     const [eventTime, setEventTime] = useState('');
     const [selectedDate, setSelectedDate] = useState('');
     const [showSidePanel, setShowSidePanel] = useState(false);
+    const [isSubmitting, setIsSubmitting] = useState(false);
     const [showDate, setShowDate] = useState(true);
     const [currentView, setCurrentView] = useState('month');
     const [currentWeekStart, setCurrentWeekStart] = useState(() => {
@@ -135,29 +137,44 @@ const Calender = () => {
 
     const handleCreateEvent = async (e) => {
         e.preventDefault();
-        const token = localStorage.getItem('token');
-        const apiBaseUrl = import.meta.env.VITE_API_BASE_URL || 'http://localhost:5000/api';
-        const response = await fetch(`${apiBaseUrl}/events`, {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-                'Authorization': `Bearer ${token}`
-            },
-            body: JSON.stringify({
-                title: eventTitle,
-                description: eventDescription,
-                time: eventTime,
-                date: selectedDate
+        if (!eventTitle.trim()) {
+            toast.error('Please enter an event title');
+            return;
+        }
+        setIsSubmitting(true);
+        try {
+            const token = localStorage.getItem('token');
+            const apiBaseUrl = import.meta.env.VITE_API_BASE_URL || 'http://localhost:5000/api';
+            const response = await fetch(`${apiBaseUrl}/events`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${token}`
+                },
+                body: JSON.stringify({
+                    title: eventTitle,
+                    description: eventDescription,
+                    time: eventTime,
+                    date: selectedDate
+                })
             })
-        })
-        const data = await response.json();
-        if (response.ok) {
-            setEvents([...events, data.event]);
-            setShowModal(false);
-            setEventTitle('');
-            setEventDescription('');
-            setEventTime('');
-            setSelectedDate('');
+            const data = await response.json();
+            if (response.ok) {
+                setEvents([...events, data.event]);
+                setShowModal(false);
+                setEventTitle('');
+                setEventDescription('');
+                setEventTime('');
+                setSelectedDate('');
+                toast.success('Event saved successfully!');
+            } else {
+                toast.error(data.message || 'Failed to save event');
+            }
+        } catch (error) {
+            console.error('Create event error:', error);
+            toast.error('Failed to save event');
+        } finally {
+            setIsSubmitting(false);
         }
     }
 
@@ -166,16 +183,24 @@ const Calender = () => {
     }
 
     const handleDeleteEvent = async (eventId) => {
-        const token = localStorage.getItem('token');
-        const apiBaseUrl = import.meta.env.VITE_API_BASE_URL || 'http://localhost:5000/api';
-        const response = await fetch(`${apiBaseUrl}/events/${eventId}`, {
-            method: 'DELETE',
-            headers: {
-                'Authorization': `Bearer ${token}`
+        try {
+            const token = localStorage.getItem('token');
+            const apiBaseUrl = import.meta.env.VITE_API_BASE_URL || 'http://localhost:5000/api';
+            const response = await fetch(`${apiBaseUrl}/events/${eventId}`, {
+                method: 'DELETE',
+                headers: {
+                    'Authorization': `Bearer ${token}`
+                }
+            });
+            if (response.ok) {
+                setEvents(events.filter(event => event._id !== eventId));
+                toast.success('Event deleted successfully!');
+            } else {
+                toast.error('Failed to delete event');
             }
-        });
-        if (response.ok) {
-            setEvents(events.filter(event => event._id !== eventId));
+        } catch (error) {
+            console.error('Delete event error:', error);
+            toast.error('Failed to delete event');
         }
     }
 
@@ -541,9 +566,18 @@ const Calender = () => {
                             </div>
                             <button
                                 type="submit"
-                                className="w-full py-3 bg-indigo-500 hover:bg-indigo-600 text-white font-bold text-base rounded-xl cursor-pointer active:scale-[0.98] transition-all duration-150 shadow-md shadow-indigo-100"
+                                disabled={isSubmitting}
+                                className={`w-full py-3 bg-indigo-500 hover:bg-indigo-600 text-white font-bold text-base rounded-xl active:scale-[0.98] transition-all duration-150 shadow-md shadow-indigo-100 flex items-center justify-center gap-2 ${isSubmitting ? 'opacity-70 cursor-not-allowed' : 'cursor-pointer'}`}
                             >
-                                Save Event
+                                {isSubmitting ? (
+                                    <>
+                                        <svg className="animate-spin h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                                            <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                                            <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                                        </svg>
+                                        Saving Event...
+                                    </>
+                                ) : 'Save Event'}
                             </button>
                         </form>
                     </div>
