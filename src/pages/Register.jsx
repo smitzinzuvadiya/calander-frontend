@@ -1,5 +1,6 @@
 import React, { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
+import { toast } from 'react-hot-toast'
 
 const Register = () => {
     const navigate = useNavigate();
@@ -22,14 +23,14 @@ const Register = () => {
             if (response.ok) {
                 localStorage.setItem('token', data.token);
                 localStorage.setItem('user', JSON.stringify(data.user));
-                alert(data.message);
+                toast.success(data.message || 'Registration successful!');
                 navigate('/');
             } else {
-                alert(data.message || 'Registration failed. Please try again.')
+                toast.error(data.message || 'Registration failed. Please try again.')
             }
         } catch (error) {
             console.error('Registration error:', error);
-            alert('Server error. Please try again.');
+            toast.error('Server error. Please try again.');
         }
     }
 
